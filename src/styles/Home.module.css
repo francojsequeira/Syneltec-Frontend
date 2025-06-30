@@ -1,0 +1,43 @@
+.principal {
+  position: relative;
+  width: 100%;
+  height: 80vh;
+  overflow: hidden;
+  background-color: black;
+  color: white;
+}
+
+.principalImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.3;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.principalOverlay {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+.principalText {
+  position: absolute;
+  text-align: center;
+  max-width: 80%;
+  color: white;
+}
+
+.principalText h1 {
+  font-size: 2.5rem;
+  font-weight: 600;
+}
+
+.principalText p {
+  font-size: 1.2rem;
+  margin-top: 1rem;
+}
