@@ -1,23 +1,19 @@
-import React from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
-import Home from './components/Home';
-import Services from './components/Services';
-import Gallery from './components/Gallery';
-import Contact from './components/Contact';
-import SobreNosotros from './components/SobreNosotros';
 import Footer from './components/Footer';
+import Home from './components/Home';
+import SobreNosotros from './components/SobreNosotros';
 
 function App() {
   return (
-    <>
+    <BrowserRouter>
       <Navbar />
-      <Home />
-      <Services />
-      <Gallery />
-      <Contact />
-      <SobreNosotros />
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/sobrenosotros" element={<SobreNosotros />} />
+      </Routes>
       <Footer />
-    </>
+    </BrowserRouter>
   );
 }
 

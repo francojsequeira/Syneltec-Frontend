@@ -1,0 +1,53 @@
+.sobreSection {
+  padding: 4rem 2rem;
+  background-color: #f4f4f4;
+  color: #121212;
+}
+
+.container {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.sobreSection h1 {
+  text-align: center;
+  font-size: 2.5rem;
+  margin-bottom: 2rem;
+  color: #00bcd4;
+}
+
+.content {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
+  align-items: center;
+  justify-content: center;
+}
+
+.textBlock {
+  flex: 1 1 400px;
+}
+
+.textBlock h2 {
+  font-size: 1.75rem;
+  margin-bottom: 0.5rem;
+  color: #2c2c2d;
+}
+
+.textBlock p {
+  font-size: 1rem;
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+  font-weight: 300;
+}
+
+.imageBlock {
+  flex: 1 1 300px;
+  text-align: center;
+}
+
+.image {
+  max-width: 100%;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
