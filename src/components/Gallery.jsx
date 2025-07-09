@@ -82,7 +82,7 @@ const galleryItems = [
 
 export default function Gallery() {
   return (
-    <section id="galeria" className={styles.intro}>
+    <section id="gallery" className={styles.intro}>
       <div className={styles.container}>
         <h2>Galería</h2>
         <p>Explorá nuestra experiencia en proyectos realizados.</p>

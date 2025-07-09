@@ -8,7 +8,7 @@ import Contact from './Contact';
 export default function Home() {
   return (
     <>
-      <section id="inicio" className={styles.principal}>
+      <section id="home" className={styles.principal}>
         <div className={styles.principalOverlay}>
           <img
             src={fondoPrincipal}
