@@ -1,69 +1,155 @@
 // src/components/Admin/UserList.jsx
 
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-
-const API_URL = import.meta.env.VITE_REACT_APP_API_URL; 
+import UserForm from './UserForm';
+import { useAuth } from '../../context/useAuth';
+import useCrud from '../../hooks/useCrud';
+import { API_CONFIG } from '../../config/api';
 
 const UserList = () => {
-    const [user, setUser] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
+    // Uso mi hook de autenticación para obtener el estado y el usuario actual
+    const { isAdmin, user: currentUser, loading: authLoading } = useAuth();
+    // Uso mi hook CRUD para la gestión de usuarios
+    const { fetchAll, create, update, remove, error: crudError, loading: crudLoading } = useCrud(API_CONFIG.USER);
+
+    // Mis estados
+    const [users, setUsers] = useState([]);
+    const [showForm, setShowForm] = useState(false);
+    const [editingUser, setEditingUser] = useState(null);
+    const isSaving = crudLoading;
+
+    const loadUsers = async () => {
+        // Solo cargo la lista si soy administrador
+        if(isAdmin) {
+             const usersData = await fetchAll();
+             if (usersData) setUsers(usersData);
+        }
+    };
 
     useEffect(() => {
-        const fetchProfile = async () => {
-            // Recuerdo: el token debe estar en localStorage
-            const token = localStorage.getItem('token'); 
-            if (!token) {
-                setError("Acceso denegado. Necesitas iniciar sesión (Falta token).");
-                setLoading(false);
-                return;
-            }
+        if (!authLoading && isAdmin) {
+            loadUsers();
+        }
+    }, [authLoading, isAdmin]);
 
-            try {
-                // Hago la petición al endpoint protegido de Vercel
-                const response = await axios.get(`${API_URL}/auth/profile`, {
-                    headers: {
-                        Authorization: `Bearer ${token}`, // Envío el JWT
-                    },
-                });
-                setUser(response.data);
-            } catch (error) { // Uso 'error' para la corrección del linter
-                console.error("Error al cargar el perfil:", error);
-                
-                let errorMessage;
-                if (error.response && (error.response.status === 401 || error.response.status === 403)) {
-                    // Si recibimos 401/403, es un problema de JWT (no válido o expirado)
-                    errorMessage = "Acceso no autorizado. Tu sesión ha expirado o el token es inválido.";
-                } else if (error.code === "ERR_NETWORK") {
-                     errorMessage = "Error de red: No se pudo conectar con el servidor.";
-                } else {
-                    errorMessage = "Error al conectar o cargar datos del perfil.";
-                }
-                
-                setError(errorMessage);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchProfile();
-    }, []);
+    // --- Handlers CRUD ---
 
-    if (loading) return <div className="container mt-5">Cargando perfil...</div>;
-    // Ahora el mensaje de error será más informativo
-    if (error) return <div className="container mt-5" style={{ color: 'red' }}>{error}</div>;
+    const handleSave = async (id, formData) => {
+        let result;
+        if (id) {
+            result = await update(id, formData);
+        } else {
+            result = await create(formData);
+        }
+
+        if (result) {
+            setShowForm(false);
+            setEditingUser(null);
+            loadUsers(); 
+        }
+    };
+
+    const handleDelete = async (userId) => {
+        if (!window.confirm("ADVERTENCIA: ¿Estás seguro de eliminar este usuario?")) return;
+        const result = await remove(userId);
+        if (result.success) {
+            loadUsers(); 
+        }
+    };
+
+    const startEdit = (user) => {
+        setEditingUser(user);
+        setShowForm(true);
+    };
+
+    if (authLoading || crudLoading) return <div className="container mt-5">Cargando gestión de usuarios...</div>;
+
+    if (!isAdmin) {
+        return <div className="container mt-5 alert alert-danger">Acceso Denegado. Solo administradores pueden gestionar usuarios.</div>;
+    }
 
     return (
-        <div className="container mt-5">
-            <h2>Perfil de Administrador (Conexión OK)</h2>
-            <p>Verificación JWT exitosa. Conectado a {API_URL}.</p>
-            <div className="card p-3">
-                <h4>Datos del Usuario</h4>
-                <p><strong>ID:</strong> {user._id}</p>
-                <p><strong>Nombre:</strong> {user.name}</p>
-                <p><strong>Email:</strong> {user.email}</p>
-                <p><strong>Rol:</strong> {user.role}</p>
+        <div className="container my-5">
+            <h2 className="text-dark mb-4" style={{ fontFamily: 'Poppins' }}>
+                Gestión de Usuarios
+            </h2>
+            
+            {crudError && <div className="alert alert-danger">{crudError}</div>}
+
+            <div className="d-flex justify-content-between mb-3">
+                <p>Total de usuarios: {users.length}</p>
+                <button 
+                    className={`btn ${showForm ? 'btn-secondary' : 'btn-primary'}`} 
+                    onClick={() => { 
+                        setShowForm(!showForm); 
+                        setEditingUser(null); 
+                    }}
+                >
+                    <i className={`fas fa-${showForm ? 'times' : 'plus'} me-2`}></i> 
+                    {showForm ? 'Cerrar Formulario' : 'Nuevo Usuario'}
+                </button>
             </div>
+
+            {showForm && (
+                <UserForm 
+                    initialData={editingUser} 
+                    onSave={handleSave}
+                    onCancel={() => { 
+                        setShowForm(false); 
+                        setEditingUser(null); 
+                    }} 
+                    isSaving={isSaving}
+                />
+            )}
+
+            {!showForm && users.length > 0 && (
+                <div className="table-responsive">
+                    <table className="table table-striped table-hover shadow-sm">
+                        <thead className="thead-dark">
+                            <tr>
+                                <th>ID</th>
+                                <th>Nombre</th>
+                                <th>Email</th>
+                                <th>Rol</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {users.map(user => (
+                                <tr key={user._id}>
+                                    <td>{user._id}</td>
+                                    <td>{user.name}</td>
+                                    <td>{user.email}</td>
+                                    <td>
+                                        <span className={`badge ${user.role === 'admin' ? 'bg-danger' : 'bg-info'}`}>
+                                            {user.role.toUpperCase()}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <button 
+                                            className="btn btn-sm btn-warning me-2"
+                                            onClick={() => startEdit(user)}
+                                        >
+                                            Editar
+                                        </button>
+                                        <button 
+                                            className="btn btn-sm btn-danger"
+                                            onClick={() => handleDelete(user._id)}
+                                            disabled={currentUser && currentUser._id === user._id}
+                                        >
+                                            Eliminar
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            )}
+            
+            {!showForm && users.length === 0 && !crudError && (
+                 <div className="alert alert-info text-center mt-4">No hay usuarios registrados.</div>
+            )}
         </div>
     );
 };
