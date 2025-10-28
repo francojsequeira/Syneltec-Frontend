@@ -11,22 +11,30 @@ const useCrud = (endpointGroup) => {
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(false);
 
-    // Necesito el token de autenticación para mis peticiones protegidas
+    // Obtengo el token para las rutas que sí lo necesitan (C/U/D y listado de Usuarios)
     const token = localStorage.getItem('token');
-    const authHeaders = {
-        headers: { Authorization: `Bearer ${token}` }
-    };
-
+    
     // --- LECTURA (GET ALL) ---
     const fetchAll = async () => {
         setLoading(true);
         setError(null);
         try {
             const url = buildApiUrl(endpointGroup.GET_ALL);
-            // Uso authHeaders por si el endpoint es protegido
-            const response = await axios.get(url, authHeaders); 
+            
+            let headers = {};
+            // CRÍTICO: Las peticiones GET a /users SIEMPRE requieren token de Admin.
+            // Las peticiones GET a /products NO requieren token (son públicas).
+            if (endpointGroup.GET_ALL === '/users') {
+                 headers = { headers: { Authorization: `Bearer ${token}` } };
+            }
+            
+            const response = await axios.get(url, headers); 
             return response.data;
         } catch (err) {
+            // Manejo específico para el error 204 No Content
+            if (err.response && err.response.status === 204) {
+                 return [];
+            }
             const errMsg = err.response?.data?.msg || `Error al obtener la lista: ${err.message}`;
             setError(errMsg);
             return [];
@@ -35,7 +43,9 @@ const useCrud = (endpointGroup) => {
         }
     };
 
-    // --- CREACIÓN (POST) ---
+    // --- C/U/D (POST, PUT, DELETE) - Estas operaciones SIEMPRE requieren token de Admin ---
+    const authHeaders = { headers: { Authorization: `Bearer ${token}` } };
+
     const create = async (formData) => {
         setLoading(true);
         setError(null);
@@ -52,7 +62,6 @@ const useCrud = (endpointGroup) => {
         }
     };
 
-    // --- ACTUALIZACIÓN (PUT) ---
     const update = async (id, formData) => {
         setLoading(true);
         setError(null);
@@ -69,7 +78,6 @@ const useCrud = (endpointGroup) => {
         }
     };
 
-    // --- ELIMINACIÓN (DELETE) ---
     const remove = async (id) => {
         setLoading(true);
         setError(null);

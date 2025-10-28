@@ -1,6 +1,6 @@
 // src/components/Admin/UserList.jsx
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import UserForm from './UserForm';
 import { useAuth } from '../../context/useAuth';
 import useCrud from '../../hooks/useCrud';
@@ -18,19 +18,21 @@ const UserList = () => {
     const [editingUser, setEditingUser] = useState(null);
     const isSaving = crudLoading;
 
-    const loadUsers = async () => {
-        // Solo cargo la lista si soy administrador
-        if(isAdmin) {
+    // Función de carga para obtener usuarios (solo Admin)
+    const loadUsers = useCallback(async () => {
+        // Debo asegurarme de que el hook CRUD esté listo y que yo sea Admin
+        if (isAdmin) {
              const usersData = await fetchAll();
              if (usersData) setUsers(usersData);
         }
-    };
+    }, [fetchAll, isAdmin]); // CORRECCIÓN: loadUsers debe depender de isAdmin para evitar la advertencia del linter
 
     useEffect(() => {
+        // Cargo la lista de usuarios una vez que la autenticación terminó y soy Admin
         if (!authLoading && isAdmin) {
             loadUsers();
         }
-    }, [authLoading, isAdmin]);
+    }, [authLoading, loadUsers, isAdmin]); // CORRECCIÓN: Agrego isAdmin a las dependencias de useEffect
 
     // --- Handlers CRUD ---
 
@@ -155,3 +157,4 @@ const UserList = () => {
 };
 
 export default UserList;
+

@@ -1,6 +1,6 @@
-// src/components/Admin/ProductList.jsx
+// src/components/Admin/ProductList.jsx (Versión Limpia)
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import ProductForm from './ProductForm';
 import { useAuth } from '../../context/useAuth';
 import useCrud from '../../hooks/useCrud';
@@ -15,8 +15,8 @@ const STATUS_MAP = {
 };
 
 const ProductList = () => {
-    // Obtengo mis hooks
-    const { isAdmin, loading: authLoading } = useAuth();
+    // CORRECCIÓN: Solo extraigo lo que realmente uso para evitar advertencias de ESLint
+    const { isAdmin, loading: authLoading } = useAuth(); 
     const { fetchAll, create, update, remove, error: crudError, loading: crudLoading } = useCrud(API_CONFIG.PRODUCT);
     const { fetchCategories, error: catError, loading: catLoading } = useFetchCategories();
 
@@ -27,29 +27,29 @@ const ProductList = () => {
     const [editingProduct, setEditingProduct] = useState(null);
     const isSaving = crudLoading;
 
-    // Función para cargar todos los datos que necesito
-    const loadData = async () => {
-        // Me aseguro de cargar ambos datos
-        const [productsData, categoriesData] = await Promise.all([
-            fetchAll(),
-            fetchCategories()
-        ]);
+    // Función de carga memoizada para usar en useEffect
+    const loadData = useCallback(async () => {
+        // 1. CARGA PÚBLICA (Productos) - Siempre se ejecuta
+        const productsData = await fetchAll();
         if (productsData) setProducts(productsData);
-        if (categoriesData) setCategories(categoriesData);
-    };
+        
+        // 2. CARGA CONDICIONAL (Categorías) - Solo si es Admin, para el formulario
+        if (isAdmin) {
+             const categoriesData = await fetchCategories();
+             if (categoriesData) setCategories(categoriesData);
+        }
+    }, [fetchAll, fetchCategories, isAdmin]);
 
-    // Cargo los datos al montar
     useEffect(() => {
-        if (!authLoading && isAdmin) {
+        if (!authLoading) {
             loadData();
         }
-    }, [authLoading, isAdmin]);
+    }, [authLoading, loadData]); 
 
-    // --- Handlers CRUD ---
+    // --- Handlers CRUD (Solo usados por Admin) ---
 
     const handleSave = async (id, formData) => {
         let result;
-        // Verifico si tengo ID (editar) o es nulo (crear)
         if (id) {
             result = await update(id, formData);
         } else {
@@ -57,7 +57,6 @@ const ProductList = () => {
         }
 
         if (result) {
-            // Si funciona, cierro el formulario y recargo la lista
             setShowForm(false);
             setEditingProduct(null);
             loadData(); 
@@ -77,37 +76,38 @@ const ProductList = () => {
         setShowForm(true);
     };
 
-    if (authLoading || crudLoading || catLoading) return <div className="container mt-5">Cargando datos...</div>;
-
-    if (!isAdmin) {
-        return <div className="container mt-5 alert alert-danger">Acceso Denegado. Solo administradores pueden gestionar productos.</div>;
-    }
+    if (authLoading || crudLoading || catLoading) return <div className="container mt-5">Cargando catálogo...</div>;
     
     const currentError = crudError || catError;
 
     return (
         <div className="container my-5">
             <h2 className="text-dark mb-4" style={{ fontFamily: 'Poppins' }}>
-                Gestión de Productos
+                Catálogo de Productos {isAdmin && "(Modo Edición)"}
             </h2>
             
             {currentError && <div className="alert alert-danger">{currentError}</div>}
 
             <div className="d-flex justify-content-between mb-3">
                 <p>Total de productos: {products.length}</p>
-                <button 
-                    className={`btn ${showForm ? 'btn-secondary' : 'btn-primary'}`} 
-                    onClick={() => { 
-                        setShowForm(!showForm); 
-                        setEditingProduct(null); 
-                    }}
-                >
-                    <i className={`fas fa-${showForm ? 'times' : 'plus'} me-2`}></i> 
-                    {showForm ? 'Cerrar Formulario' : 'Nuevo Producto'}
-                </button>
+                
+                {/* Botón de Nuevo Producto: Solo visible para Admin */}
+                {isAdmin && (
+                    <button 
+                        className={`btn ${showForm ? 'btn-secondary' : 'btn-primary'}`} 
+                        onClick={() => { 
+                            setShowForm(!showForm); 
+                            setEditingProduct(null); 
+                        }}
+                    >
+                        <i className={`fas fa-${showForm ? 'times' : 'plus'} me-2`}></i> 
+                        {showForm ? 'Cerrar Formulario' : 'Nuevo Producto'}
+                    </button>
+                )}
             </div>
 
-            {showForm && (
+            {/* Formulario de creación/edición: Solo visible si es Admin */}
+            {showForm && isAdmin && (
                 <ProductForm 
                     initialData={editingProduct} 
                     onSave={handleSave}
@@ -120,6 +120,7 @@ const ProductList = () => {
                 />
             )}
 
+            {/* Tabla de Productos: Visible para todos */}
             {!showForm && products.length > 0 && (
                 <div className="table-responsive">
                     <table className="table table-striped table-hover shadow-sm">
@@ -131,7 +132,8 @@ const ProductList = () => {
                                 <th>Stock</th>
                                 <th>Categoría</th>
                                 <th>Estado</th>
-                                <th>Acciones</th>
+                                {/* Columna de Acciones: Solo visible si es Admin */}
+                                {isAdmin && <th>Acciones</th>}
                             </tr>
                         </thead>
                         <tbody>
@@ -147,20 +149,23 @@ const ProductList = () => {
                                             {STATUS_MAP[product.status] || product.status}
                                         </span>
                                     </td>
-                                    <td>
-                                        <button 
-                                            className="btn btn-sm btn-warning me-2"
-                                            onClick={() => startEdit(product)}
-                                        >
-                                            Editar
-                                        </button>
-                                        <button 
-                                            className="btn btn-sm btn-danger"
-                                            onClick={() => handleDelete(product._id)}
-                                        >
-                                            Eliminar
-                                        </button>
-                                    </td>
+                                    {/* Botones de acción: Solo visibles si es Admin */}
+                                    {isAdmin && (
+                                        <td>
+                                            <button 
+                                                className="btn btn-sm btn-warning me-2"
+                                                onClick={() => startEdit(product)}
+                                            >
+                                                Editar
+                                            </button>
+                                            <button 
+                                                className="btn btn-sm btn-danger"
+                                                onClick={() => handleDelete(product._id)}
+                                            >
+                                                Eliminar
+                                            </button>
+                                        </td>
+                                    )}
                                 </tr>
                             ))}
                         </tbody>
@@ -169,7 +174,14 @@ const ProductList = () => {
             )}
             
             {!showForm && products.length === 0 && !currentError && (
-                 <div className="alert alert-info text-center mt-4">No hay productos registrados.</div>
+                 <div className="alert alert-info text-center mt-4">No hay productos disponibles en el catálogo.</div>
+            )}
+            
+            {/* Mensaje para que el usuario público sepa qué puede hacer */}
+            {products.length > 0 && !isAdmin && (
+                <div className="alert alert-info mt-4">
+                    Inicia sesión como administrador para gestionar el inventario (editar, crear o eliminar productos).
+                </div>
             )}
         </div>
     );
