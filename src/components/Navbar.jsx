@@ -3,11 +3,17 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { HashLink } from 'react-router-hash-link';
-import { useAuth } from '../context/useAuth'; 
+import { useAuth } from '../context/useAuth';
 
 export default function Navbar() {
     // Obtengo los estados y funciones del hook useAuth
-    const { isAuthenticated, isAdmin, user, logout } = useAuth(); 
+const { isAuthenticated, isAdmin, user, logout } = useAuth();
+
+    // Handler de Logout para asegurar que no se navegue
+    const handleLogout = (e) => {
+        e.preventDefault(); // Evita la navegación predeterminada del <a>
+        logout();
+    };
 
     return (
         <nav className="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
@@ -35,14 +41,14 @@ export default function Navbar() {
 
 
                         {/* Menú de Administración (Solo si es Admin) */}
-                        {isAuthenticated && isAdmin && user && ( // Añadí user && para seguridad extra
+                        {isAuthenticated && isAdmin && user && ( 
                             <li className="nav-item dropdown">
                                 {/* Muestro el nombre del usuario (o solo el rol) en mayúsculas */}
                                 <a className="nav-link dropdown-toggle text-warning" href="#" id="navbarDropdownAdmin" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                     {user.name.toUpperCase()}
                                 </a>
                                 <ul className="dropdown-menu dropdown-menu-dark" aria-labelledby="navbarDropdownAdmin">
-                                    {/* Enlace para la gestión de productos (mismo que el público, pero con permisos) */}
+                                    {/* Enlace para la gestión de productos */}
                                     <li><Link className="dropdown-item" to="/gestion/productos">Gestión Productos</Link></li>
                                     
                                     {/* Enlace para la gestión de usuarios (SOLO ADMIN) */}
@@ -51,7 +57,7 @@ export default function Navbar() {
                                     <li><hr className="dropdown-divider" /></li>
                                     
                                     {/* Opción de cerrar sesión en el dropdown */}
-                                    <li><a className="dropdown-item text-danger" onClick={logout} href="#">Cerrar Sesión</a></li>
+                                    <li><a className="dropdown-item text-danger" onClick={handleLogout} href="#">Cerrar Sesión</a></li>
                                 </ul>
                             </li>
                         )}
@@ -60,10 +66,16 @@ export default function Navbar() {
                         <li className="nav-item">
                             {isAuthenticated ? (
                                 // Si estoy autenticado y NO soy admin, muestro el botón de Logout simple
-                                !isAdmin && <button className="btn btn-sm btn-primary ms-2" onClick={logout}>Cerrar Sesión</button>
+                                // Uso la clase btn-outline-light para que sea armonioso con el fondo oscuro
+                                !isAdmin && 
+                                <button className="btn btn-sm btn-outline-light ms-2" onClick={logout}>
+                                    Cerrar Sesión
+                                </button>
                             ) : (
-                                // Si no estoy autenticado, muestro el botón de Login
-                                <Link className="btn btn-sm btn-primary ms-2" to="/login">Login</Link>
+                                // Si no estoy autenticado, muestro el botón de Login (Armonioso)
+                                <Link className="btn btn-sm btn-outline-light ms-2" to="/login">
+                                    Login
+                                </Link>
                             )}
                         </li>
                     </ul>

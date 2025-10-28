@@ -13,7 +13,10 @@ const useCrud = (endpointGroup) => {
 
     // Obtengo el token para las rutas que sí lo necesitan (C/U/D y listado de Usuarios)
     const token = localStorage.getItem('token');
-    
+    const authHeaders = {
+        headers: { Authorization: `Bearer ${token}` }
+    };
+
     // --- LECTURA (GET ALL) ---
     const fetchAll = async () => {
         setLoading(true);
@@ -22,10 +25,9 @@ const useCrud = (endpointGroup) => {
             const url = buildApiUrl(endpointGroup.GET_ALL);
             
             let headers = {};
-            // CRÍTICO: Las peticiones GET a /users SIEMPRE requieren token de Admin.
-            // Las peticiones GET a /products NO requieren token (son públicas).
+            // Si es la ruta de Usuarios, SÍ necesita el token (Auth & Admin)
             if (endpointGroup.GET_ALL === '/users') {
-                 headers = { headers: { Authorization: `Bearer ${token}` } };
+                 headers = authHeaders;
             }
             
             const response = await axios.get(url, headers); 
@@ -44,8 +46,6 @@ const useCrud = (endpointGroup) => {
     };
 
     // --- C/U/D (POST, PUT, DELETE) - Estas operaciones SIEMPRE requieren token de Admin ---
-    const authHeaders = { headers: { Authorization: `Bearer ${token}` } };
-
     const create = async (formData) => {
         setLoading(true);
         setError(null);

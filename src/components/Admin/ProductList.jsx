@@ -1,4 +1,4 @@
-// src/components/Admin/ProductList.jsx (Versión Limpia)
+// src/components/Admin/ProductList.jsx
 
 import React, { useState, useEffect, useCallback } from 'react';
 import ProductForm from './ProductForm';
@@ -15,8 +15,8 @@ const STATUS_MAP = {
 };
 
 const ProductList = () => {
-    // CORRECCIÓN: Solo extraigo lo que realmente uso para evitar advertencias de ESLint
-    const { isAdmin, loading: authLoading } = useAuth(); 
+    // Solo extraigo lo que realmente uso
+    const { isAdmin, loading: authLoading } = useAuth();
     const { fetchAll, create, update, remove, error: crudError, loading: crudLoading } = useCrud(API_CONFIG.PRODUCT);
     const { fetchCategories, error: catError, loading: catLoading } = useFetchCategories();
 
@@ -27,7 +27,7 @@ const ProductList = () => {
     const [editingProduct, setEditingProduct] = useState(null);
     const isSaving = crudLoading;
 
-    // Función de carga memoizada para usar en useEffect
+    // Función de carga (memoizada para usar en useEffect sin warnings)
     const loadData = useCallback(async () => {
         // 1. CARGA PÚBLICA (Productos) - Siempre se ejecuta
         const productsData = await fetchAll();
@@ -40,7 +40,9 @@ const ProductList = () => {
         }
     }, [fetchAll, fetchCategories, isAdmin]);
 
+    // EJECUCIÓN: Se dispara solo cuando authLoading se resuelve y cuando isAdmin cambia.
     useEffect(() => {
+        // Debo asegurarme de que la autenticación haya terminado antes de intentar cargar datos.
         if (!authLoading) {
             loadData();
         }

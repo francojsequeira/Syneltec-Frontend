@@ -7,9 +7,7 @@ import useCrud from '../../hooks/useCrud';
 import { API_CONFIG } from '../../config/api';
 
 const UserList = () => {
-    // Uso mi hook de autenticación para obtener el estado y el usuario actual
     const { isAdmin, user: currentUser, loading: authLoading } = useAuth();
-    // Uso mi hook CRUD para la gestión de usuarios
     const { fetchAll, create, update, remove, error: crudError, loading: crudLoading } = useCrud(API_CONFIG.USER);
 
     // Mis estados
@@ -25,14 +23,14 @@ const UserList = () => {
              const usersData = await fetchAll();
              if (usersData) setUsers(usersData);
         }
-    }, [fetchAll, isAdmin]); // CORRECCIÓN: loadUsers debe depender de isAdmin para evitar la advertencia del linter
+    }, [fetchAll, isAdmin]); // Dependencias correctas para useCallback
 
     useEffect(() => {
-        // Cargo la lista de usuarios una vez que la autenticación terminó y soy Admin
+        // CORRECCIÓN: Agrego isAdmin y loadUsers a las dependencias.
         if (!authLoading && isAdmin) {
             loadUsers();
         }
-    }, [authLoading, loadUsers, isAdmin]); // CORRECCIÓN: Agrego isAdmin a las dependencias de useEffect
+    }, [authLoading, loadUsers, isAdmin]); 
 
     // --- Handlers CRUD ---
 
@@ -157,4 +155,3 @@ const UserList = () => {
 };
 
 export default UserList;
-
