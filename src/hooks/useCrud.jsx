@@ -1,6 +1,6 @@
 // src/hooks/useCrud.jsx
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import axios from 'axios';
 import { buildApiUrl } from '../config/api';
 
@@ -11,26 +11,23 @@ const useCrud = (endpointGroup) => {
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(false);
 
-    // Obtengo el token para las rutas que sí lo necesitan (C/U/D y listado de Usuarios)
-    const token = localStorage.getItem('token');
-    const authHeaders = {
-        headers: { Authorization: `Bearer ${token}` }
-    };
+    // Nota: leemos el token dentro de cada función para obtener siempre el valor actual
 
     // --- LECTURA (GET ALL) ---
-    const fetchAll = async () => {
+    const fetchAll = useCallback(async () => {
         setLoading(true);
         setError(null);
         try {
             const url = buildApiUrl(endpointGroup.GET_ALL);
-            
-            let headers = {};
+
+            let config = {};
             // Si es la ruta de Usuarios, SÍ necesita el token (Auth & Admin)
             if (endpointGroup.GET_ALL === '/users') {
-                 headers = authHeaders;
+                 const token = localStorage.getItem('token');
+                 config = { headers: { Authorization: `Bearer ${token}` } };
             }
-            
-            const response = await axios.get(url, headers); 
+
+            const response = await axios.get(url, config);
             return response.data;
         } catch (err) {
             // Manejo específico para el error 204 No Content
@@ -43,14 +40,16 @@ const useCrud = (endpointGroup) => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [endpointGroup]);
 
     // --- C/U/D (POST, PUT, DELETE) - Estas operaciones SIEMPRE requieren token de Admin ---
-    const create = async (formData) => {
+    const create = useCallback(async (formData) => {
         setLoading(true);
         setError(null);
         try {
             const url = buildApiUrl(endpointGroup.CREATE);
+            const token = localStorage.getItem('token');
+            const authHeaders = { headers: { Authorization: `Bearer ${token}` } };
             const response = await axios.post(url, formData, authHeaders);
             return response.data;
         } catch (err) {
@@ -60,13 +59,15 @@ const useCrud = (endpointGroup) => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [endpointGroup]);
 
-    const update = async (id, formData) => {
+    const update = useCallback(async (id, formData) => {
         setLoading(true);
         setError(null);
         try {
             const url = buildApiUrl(endpointGroup.UPDATE, id);
+            const token = localStorage.getItem('token');
+            const authHeaders = { headers: { Authorization: `Bearer ${token}` } };
             const response = await axios.put(url, formData, authHeaders);
             return response.data;
         } catch (err) {
@@ -76,13 +77,15 @@ const useCrud = (endpointGroup) => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [endpointGroup]);
 
-    const remove = async (id) => {
+    const remove = useCallback(async (id) => {
         setLoading(true);
         setError(null);
         try {
             const url = buildApiUrl(endpointGroup.DELETE, id);
+            const token = localStorage.getItem('token');
+            const authHeaders = { headers: { Authorization: `Bearer ${token}` } };
             await axios.delete(url, authHeaders);
             return { success: true };
         } catch (err) {
@@ -92,7 +95,7 @@ const useCrud = (endpointGroup) => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [endpointGroup]);
 
     return {
         fetchAll,

@@ -1,6 +1,6 @@
 // src/context/AuthProvider.jsx
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import axios from 'axios';
 import { AuthContext } from './AuthContext'; // Importo el Contexto desde su propio archivo
 
@@ -33,7 +33,7 @@ export const AuthProvider = ({ children }) => {
     }, []);
 
     // Función que llama al backend para iniciar sesión
-    const login = async (email, password) => {
+    const login = useCallback(async (email, password) => {
         const response = await axios.post(`${API_URL}/auth/login`, { email, password });
         const { token, user: userData } = response.data;
         
@@ -41,22 +41,24 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('token', token);
         setUser(userData);
         return userData;
-    };
+    }, []);
 
     // Función para cerrar sesión
-    const logout = () => {
+    const logout = useCallback(() => {
         localStorage.removeItem('token');
         setUser(null);
-    };
+    }, []);
 
-    const isAuthenticated = !!user; 
-    const isAdmin = user && user.role === 'admin'; 
+    const isAuthenticated = !!user;
+    // Aceptar variantes de mayúsculas/minúsculas en el rol devuelto por el backend
+    const isAdmin = !!user && String(user.role || '').toLowerCase() === 'admin';
+
+    const contextValue = useMemo(() => ({ user, isAuthenticated, isAdmin, login, logout, loading }), [user, isAuthenticated, isAdmin, login, logout, loading]);
 
     return (
         // Proveo el estado y las funciones a toda la app
-        <AuthContext.Provider value={{ user, isAuthenticated, isAdmin, login, logout, loading }}>
-            {/* Solo renderizo la aplicación si ya verifiqué el token (no estoy cargando) */}
-            {!loading && children}
+        <AuthContext.Provider value={contextValue}>
+            {children}
         </AuthContext.Provider>
     );
 };

@@ -10,29 +10,30 @@ const UserList = () => {
     const { isAdmin, user: currentUser, loading: authLoading } = useAuth();
     const { fetchAll, create, update, remove, error: crudError, loading: crudLoading } = useCrud(API_CONFIG.USER);
 
-    // Mis estados
     const [users, setUsers] = useState([]);
     const [showForm, setShowForm] = useState(false);
     const [editingUser, setEditingUser] = useState(null);
     const isSaving = crudLoading;
 
-    // Función de carga para obtener usuarios (solo Admin)
+    // Función de carga de datos (memoizada para ser segura en useEffect)
     const loadUsers = useCallback(async () => {
-        // Debo asegurarme de que el hook CRUD esté listo y que yo sea Admin
         if (isAdmin) {
              const usersData = await fetchAll();
              if (usersData) setUsers(usersData);
         }
-    }, [fetchAll, isAdmin]); // Dependencias correctas para useCallback
+    }, [fetchAll, isAdmin]);
 
+    // Ejecución controlada del fetch
     useEffect(() => {
-        // CORRECCIÓN: Agrego isAdmin y loadUsers a las dependencias.
-        if (!authLoading && isAdmin) {
+        // La lógica de loadUsers queda dentro de la función memoizada.
+        // Solo disparamos la carga cuando finaliza la verificación de auth.
+        if (!authLoading) {
             loadUsers();
         }
-    }, [authLoading, loadUsers, isAdmin]); 
+    }, [authLoading, loadUsers]);
 
     // --- Handlers CRUD ---
+    // El handler debe llamar a loadUsers para recargar, no recrear la función.
 
     const handleSave = async (id, formData) => {
         let result;
@@ -45,7 +46,7 @@ const UserList = () => {
         if (result) {
             setShowForm(false);
             setEditingUser(null);
-            loadUsers(); 
+            await loadUsers(); // Llamo a la función para recargar
         }
     };
 
@@ -53,7 +54,7 @@ const UserList = () => {
         if (!window.confirm("ADVERTENCIA: ¿Estás seguro de eliminar este usuario?")) return;
         const result = await remove(userId);
         if (result.success) {
-            loadUsers(); 
+            await loadUsers(); // Llamo a la función para recargar
         }
     };
 
@@ -68,6 +69,7 @@ const UserList = () => {
         return <div className="container mt-5 alert alert-danger">Acceso Denegado. Solo administradores pueden gestionar usuarios.</div>;
     }
 
+    // EL RESTO DEL CÓDIGO JSX PERMANECE IGUAL
     return (
         <div className="container my-5">
             <h2 className="text-dark mb-4" style={{ fontFamily: 'Poppins' }}>
@@ -129,6 +131,7 @@ const UserList = () => {
                                         <button 
                                             className="btn btn-sm btn-warning me-2"
                                             onClick={() => startEdit(user)}
+                                            title="Editar Usuario"
                                         >
                                             Editar
                                         </button>
@@ -136,6 +139,7 @@ const UserList = () => {
                                             className="btn btn-sm btn-danger"
                                             onClick={() => handleDelete(user._id)}
                                             disabled={currentUser && currentUser._id === user._id}
+                                            title="Eliminar Usuario"
                                         >
                                             Eliminar
                                         </button>

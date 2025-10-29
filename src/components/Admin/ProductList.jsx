@@ -15,8 +15,8 @@ const STATUS_MAP = {
 };
 
 const ProductList = () => {
-    // Solo extraigo lo que realmente uso
-    const { isAdmin, loading: authLoading } = useAuth();
+    // Uso solo las variables necesarias para el componente
+    const { isAdmin, loading: authLoading } = useAuth(); 
     const { fetchAll, create, update, remove, error: crudError, loading: crudLoading } = useCrud(API_CONFIG.PRODUCT);
     const { fetchCategories, error: catError, loading: catLoading } = useFetchCategories();
 
@@ -27,7 +27,7 @@ const ProductList = () => {
     const [editingProduct, setEditingProduct] = useState(null);
     const isSaving = crudLoading;
 
-    // Función de carga (memoizada para usar en useEffect sin warnings)
+    // Función de carga estable. Depende de los hooks CRUD y de isAdmin.
     const loadData = useCallback(async () => {
         // 1. CARGA PÚBLICA (Productos) - Siempre se ejecuta
         const productsData = await fetchAll();
@@ -38,15 +38,14 @@ const ProductList = () => {
              const categoriesData = await fetchCategories();
              if (categoriesData) setCategories(categoriesData);
         }
-    }, [fetchAll, fetchCategories, isAdmin]);
+    }, [fetchAll, fetchCategories, isAdmin]); 
 
-    // EJECUCIÓN: Se dispara solo cuando authLoading se resuelve y cuando isAdmin cambia.
+    // Ejecución controlada del fetch
     useEffect(() => {
-        // Debo asegurarme de que la autenticación haya terminado antes de intentar cargar datos.
         if (!authLoading) {
             loadData();
         }
-    }, [authLoading, loadData]); 
+    }, [authLoading, loadData]); // loadData es la dependencia estable
 
     // --- Handlers CRUD (Solo usados por Admin) ---
 
@@ -61,7 +60,7 @@ const ProductList = () => {
         if (result) {
             setShowForm(false);
             setEditingProduct(null);
-            loadData(); 
+            loadData(); // Recarga
         }
     };
 
@@ -69,7 +68,7 @@ const ProductList = () => {
         if (!window.confirm("¿Estás seguro de eliminar este producto?")) return;
         const result = await remove(productId);
         if (result.success) {
-            loadData(); 
+            loadData(); // Recarga
         }
     };
 
@@ -157,12 +156,14 @@ const ProductList = () => {
                                             <button 
                                                 className="btn btn-sm btn-warning me-2"
                                                 onClick={() => startEdit(product)}
+                                                title="Editar Producto"
                                             >
                                                 Editar
                                             </button>
                                             <button 
                                                 className="btn btn-sm btn-danger"
                                                 onClick={() => handleDelete(product._id)}
+                                                title="Eliminar Producto"
                                             >
                                                 Eliminar
                                             </button>
