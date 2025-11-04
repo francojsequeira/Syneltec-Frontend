@@ -1,5 +1,5 @@
 // src/hooks/useFetchCategories.jsx
-
+/*
 import { useState, useCallback } from "react";
 import axios from 'axios';
 import { buildApiUrl, API_CONFIG } from '../config/api';
@@ -33,3 +33,5 @@ const useFetchCategories = () => {
 };
 
 export default useFetchCategories;
+
+*/
